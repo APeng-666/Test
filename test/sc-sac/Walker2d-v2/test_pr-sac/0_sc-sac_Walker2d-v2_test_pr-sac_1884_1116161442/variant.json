@@ -1,0 +1,140 @@
+{
+  "algorithm": {
+    "class": "BatchAlgorithm",
+    "kwargs": {
+      "batch_size": 256,
+      "min_num_steps_before_training": 5000,
+      "need_snapshot_list": [
+        "policy",
+        "qf"
+      ],
+      "num_epochs": 1000,
+      "num_eval_steps_per_epoch": [
+        8000
+      ]
+    },
+    "name": "batch_algorithm"
+  },
+  "collectors": [
+    {
+      "class": "StepCollector",
+      "kwargs": {
+        "env": "$expl_env",
+        "policy": "$policy"
+      },
+      "name": "expl_collector"
+    },
+    {
+      "class": "PathCollector",
+      "kwargs": {
+        "env": "$eval_env_0",
+        "policy": "$eval_policy"
+      },
+      "name": "eval_collector_0"
+    }
+  ],
+  "environments": [
+    {
+      "class": "SimpleEnv",
+      "kwargs": {
+        "env_name": "Walker2d-v2",
+        "state_scale_from_data": true
+      },
+      "name": "expl_env"
+    },
+    {
+      "class": "NormalizedVectorEnv",
+      "kwargs": {
+        "asynchronous": true,
+        "env_name": "Walker2d-v2",
+        "n_env": 8
+      },
+      "name": "eval_env_0"
+    }
+  ],
+  "experiment": {
+    "algo_name": "sc-sac",
+    "base_log_dir": "test",
+    "env_name": "Walker2d-v2",
+    "exp_id": 0,
+    "exp_name": "test_pr-sac",
+    "exp_title": "0_sc-sac_Walker2d-v2_test_pr-sac",
+    "log_dir": "test/sc-sac/Walker2d-v2/test_pr-sac/0_sc-sac_Walker2d-v2_test_pr-sac_1884_1116161442",
+    "seed": 1884,
+    "silent": false,
+    "visdom_port": 8097
+  },
+  "policies": [
+    {
+      "class": "GaussianPolicy",
+      "kwargs": {
+        "activation": "relu",
+        "env": "$expl_env",
+        "hidden_layer": [
+          256,
+          256
+        ]
+      },
+      "name": "protagonist"
+    },
+    {
+      "class": "DeterministicPolicyWithNoise",
+      "kwargs": {
+        "activation": "relu",
+        "env": "$expl_env",
+        "hidden_layer": [
+          256,
+          256
+        ],
+        "use_target": false
+      },
+      "name": "adversary"
+    },
+    {
+      "class": "PRPolicy",
+      "kwargs": {
+        "adversary": "$adversary",
+        "epsilon": 0.05,
+        "protagonist": "$protagonist"
+      },
+      "name": "policy"
+    },
+    {
+      "class": "MakeDeterministic",
+      "kwargs": {
+        "policy": "$policy"
+      },
+      "name": "eval_policy"
+    }
+  ],
+  "replay_pools": {
+    "class": "SimpleReplayPool",
+    "kwargs": {
+      "env": "$expl_env"
+    },
+    "name": "pool"
+  },
+  "trainers": {
+    "class": "PRSACTrainer",
+    "kwargs": {
+      "adversary_update_period": 11,
+      "env": "$expl_env",
+      "policy": "$policy",
+      "qf": "$qf"
+    },
+    "name": "trainer"
+  },
+  "value_functions": {
+    "class": "EnsembleQValue",
+    "kwargs": {
+      "activation": "relu",
+      "ensemble_size": 2,
+      "env": "$expl_env",
+      "hidden_layer": [
+        256,
+        256
+      ]
+    },
+    "name": "qf"
+  }
+}
